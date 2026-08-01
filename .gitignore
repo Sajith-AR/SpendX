@@ -1,0 +1,22 @@
+# Dependencies
+node_modules/
+
+# Production builds
+dist/
+build/
+.output/
+
+# Environment files
+.env
+.env.local
+
+# Logs
+*.log
+npm-debug.log*
+
+# IDE & Tooling
+.kiro/
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

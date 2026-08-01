@@ -1,0 +1,77 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg: #0A0F1E;
+    --sidebar: #0F172A;
+    --card: #111827;
+    --border: #1E293B;
+    --text-primary: #F8FAFC;
+    --text-secondary: #94A3B8;
+  }
+
+  .light {
+    --bg: #F8FAFC;
+    --sidebar: #FFFFFF;
+    --card: #FFFFFF;
+    --border: #E2E8F0;
+    --text-primary: #0F172A;
+    --text-secondary: #64748B;
+  }
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Glassmorphism utilities */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(30, 41, 59, 0.8);
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(17, 24, 39, 0.9) 0%, rgba(15, 23, 42, 0.7) 100%);
+  border: 1px solid rgba(30, 41, 59, 0.7);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+/* Glow effects */
+.glow-primary {
+  box-shadow: 0 0 25px -5px rgba(20, 241, 149, 0.3);
+}
+
+.glow-blue {
+  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.3);
+}
+
+.glow-purple {
+  box-shadow: 0 0 25px -5px rgba(139, 92, 246, 0.3);
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0F1E;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1E293B;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
