@@ -9,7 +9,6 @@ interface QueryResult {
 }
 
 export const processFinancialQuery = async (userId: string, question: string): Promise<QueryResult> => {
-  // Validate and parse ObjectId safely
   let userObjId: mongoose.Types.ObjectId;
   try {
     userObjId = mongoose.Types.ObjectId.isValid(userId)
@@ -19,7 +18,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
     userObjId = new mongoose.Types.ObjectId('65f1a2b3c4d5e6f708192a3b');
   }
 
-  // Ensure data exists for this user; if empty, seed demo data automatically
+  // Seed demo data automatically if database has 0 transactions for this user
   const count = await Transaction.countDocuments({ user: userObjId });
   if (count === 0) {
     await seedUserDemoData(userObjId.toString());
@@ -28,6 +27,14 @@ export const processFinancialQuery = async (userId: string, question: string): P
   const text = question.trim().toLowerCase();
   const now = new Date();
   const currentYear = now.getFullYear();
+
+  // 0. Handle Greetings & Small Talk
+  const greetings = ['hi', 'hello', 'hey', 'hola', 'good morning', 'good afternoon', 'good evening', 'help', 'who are you'];
+  if (greetings.includes(text) || text.startsWith('hi ') || text.startsWith('hello ')) {
+    return {
+      reply: `Hello Sajith! 👋 I am your SpendX AI Financial Assistant. How can I help you manage your money today?\n\nYou can ask me questions like:\n• *"What did I spend today?"*\n• *"What did I spend on 07/05/2026?"*\n• *"Show my food expenses"*\n• *"What did my father spend this month?"*\n• *"What is my highest expense?"*\n• *"Give me my monthly summary"*`,
+    };
+  }
 
   const monthMap: Record<string, number> = {
     january: 1, jan: 1,
@@ -204,7 +211,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
 
   // Category filter
   const categories = ['food', 'transport', 'shopping', 'bills', 'education', 'health', 'entertainment', 'salary', 'investment', 'recharge'];
-  for (const cat of categories) {
+  for (const cat) {
     if (text.includes(cat)) {
       dbQuery.category = new RegExp(cat, 'i');
       break;

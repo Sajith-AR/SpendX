@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, Sparkles, User, RefreshCw } from 'lucide-react';
 import { SuggestedPrompts } from './SuggestedPrompts';
@@ -16,17 +16,90 @@ interface AIAssistantDrawerProps {
   onClose: () => void;
 }
 
+// Simple markdown formatter helper to convert markdown syntax to styled JSX
+const renderFormattedText = (content: string) => {
+  const lines = content.split('\n');
+
+  return (
+    <div className="space-y-1.5">
+      {lines.map((line, idx) => {
+        const trimmed = line.trim();
+        if (!trimmed) return <div key={idx} className="h-1" />;
+
+        // Header 3: ### Heading
+        if (trimmed.startsWith('### ')) {
+          return (
+            <h4 key={idx} className="text-sm font-extrabold text-[#14F195] pt-1 pb-0.5 tracking-tight border-b border-[#1E293B]/60 mb-1">
+              {trimmed.replace('### ', '')}
+            </h4>
+          );
+        }
+
+        // Bullet point: • or -
+        const isBullet = trimmed.startsWith('• ') || trimmed.startsWith('- ');
+        const textToFormat = isBullet ? trimmed.substring(2) : trimmed;
+
+        // Parse **bold** parts
+        const parts = textToFormat.split(/(\*\*.*?\*\*)/g);
+        const formattedLine = parts.map((part, pIdx) => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return (
+              <strong key={pIdx} className="font-extrabold text-[#F8FAFC]">
+                {part.slice(2, -2)}
+              </strong>
+            );
+          }
+          if (part.startsWith('*') && part.endsWith('*')) {
+            return (
+              <em key={pIdx} className="italic text-[#14F195]">
+                {part.slice(1, -1)}
+              </em>
+            );
+          }
+          return part;
+        });
+
+        if (isBullet) {
+          return (
+            <div key={idx} className="flex items-start gap-2 pl-1 py-0.5 text-xs text-[#E2E8F0]">
+              <span className="text-[#14F195] font-bold mt-0.5">•</span>
+              <span className="flex-1">{formattedLine}</span>
+            </div>
+          );
+        }
+
+        return (
+          <p key={idx} className="text-xs text-[#E2E8F0] leading-relaxed">
+            {formattedLine}
+          </p>
+        );
+      })}
+    </div>
+  );
+};
+
 export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Hello! I am your SpendX AI Financial Assistant. Ask me anything about your spending, income, or family accounts (e.g. *"What did I spend on 07/05/2026?"* or *"What did my father spend this month?"*). All answers are calculated directly from your real stored transactions!',
+      text: 'Hello Sajith! 👋 I am your SpendX AI Financial Assistant. Ask me anything about your spending, income, or family accounts (e.g. *"What did I spend on 07/05/2026?"* or *"What did my father spend this month?"*). All answers are calculated directly from your real stored transactions!',
       timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  useEffect(() => {
+    if (isOpen) {
+      scrollToBottom();
+    }
+  }, [messages, isOpen]);
 
   const handleSend = async (questionText?: string) => {
     const q = questionText || input;
@@ -87,7 +160,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
             className="fixed right-0 top-0 bottom-0 w-full max-w-lg bg-[#0F172A] border-l border-[#1E293B] shadow-2xl flex flex-col z-10"
           >
             {/* Drawer Header */}
-            <div className="p-6 border-b border-[#1E293B] flex items-center justify-between bg-[#111827]">
+            <div className="p-5 border-b border-[#1E293B] flex items-center justify-between bg-[#111827]">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#8B5CF6] to-[#14F195] flex items-center justify-center text-white shadow-lg">
                   <Bot className="w-6 h-6" />
@@ -108,28 +181,28 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
             </div>
 
             {/* Chat Body */}
-            <div className="flex-1 p-6 overflow-y-auto space-y-4">
+            <div className="flex-1 p-5 overflow-y-auto space-y-4 pb-8">
               {messages.map((m) => (
                 <div
                   key={m.id}
                   className={`flex gap-3 ${m.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   {m.sender === 'ai' && (
-                    <div className="w-8 h-8 rounded-xl bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 flex items-center justify-center text-[#8B5CF6] flex-shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-[#8B5CF6]/20 border border-[#8B5CF6]/40 flex items-center justify-center text-[#8B5CF6] flex-shrink-0 mt-1">
                       <Bot className="w-4 h-4" />
                     </div>
                   )}
                   <div
-                    className={`p-4 rounded-3xl max-w-[85%] text-xs sm:text-sm leading-relaxed whitespace-pre-line ${
+                    className={`p-4 rounded-3xl max-w-[88%] text-xs sm:text-sm leading-relaxed ${
                       m.sender === 'user'
-                        ? 'bg-[#14F195] text-[#0A0F1E] font-bold rounded-tr-none'
-                        : 'glass-card border border-[#1E293B] text-[#F8FAFC] rounded-tl-none space-y-2'
+                        ? 'bg-[#14F195] text-[#0A0F1E] font-bold rounded-tr-none shadow-md'
+                        : 'glass-card border border-[#1E293B] text-[#F8FAFC] rounded-tl-none shadow-md'
                     }`}
                   >
-                    {m.text}
+                    {m.sender === 'ai' ? renderFormattedText(m.text) : m.text}
                   </div>
                   {m.sender === 'user' && (
-                    <div className="w-8 h-8 rounded-xl bg-[#3B82F6] flex items-center justify-center text-white flex-shrink-0 font-bold text-xs">
+                    <div className="w-8 h-8 rounded-xl bg-[#3B82F6] flex items-center justify-center text-white flex-shrink-0 font-bold text-xs mt-1">
                       <User className="w-4 h-4" />
                     </div>
                   )}
@@ -137,10 +210,11 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
               ))}
 
               {loading && (
-                <div className="flex items-center gap-2 text-xs text-[#8B5CF6] font-semibold p-3">
-                  <RefreshCw className="w-4 h-4 animate-spin" /> Querying MongoDB aggregation engine...
+                <div className="flex items-center gap-2 text-xs text-[#8B5CF6] font-semibold p-3 bg-[#111827] border border-[#1E293B] rounded-2xl w-fit">
+                  <RefreshCw className="w-4 h-4 animate-spin text-[#14F195]" /> Querying MongoDB aggregation engine...
                 </div>
               )}
+              <div ref={messagesEndRef} />
             </div>
 
             {/* Suggested Prompts & Input Footer */}
@@ -164,7 +238,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
                 <button
                   type="submit"
                   disabled={loading || !input.trim()}
-                  className="p-3 rounded-2xl bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] text-white disabled:opacity-50 hover:opacity-90 transition-all font-bold"
+                  className="p-3 rounded-2xl bg-gradient-to-r from-[#8B5CF6] to-[#3B82F6] text-white disabled:opacity-50 hover:opacity-90 transition-all font-bold shadow-lg"
                 >
                   <Send className="w-4 h-4" />
                 </button>
