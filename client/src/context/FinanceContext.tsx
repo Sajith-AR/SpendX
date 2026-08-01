@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { Transaction, AccountOwner, FinancialSummary, Budget, Goal, Bill, NotificationItem } from '../types';
-import { api } from '../services/api';
+import {
+  Transaction, AccountOwner, FinancialSummary,
+  Budget, Goal, Bill, NotificationItem,
+} from '../types';
+import * as api from '../services/api';
 import { useAuth } from './AuthContext';
 
 interface Toast {
@@ -19,8 +22,8 @@ interface FinanceContextType {
   notifications: NotificationItem[];
   unreadNotificationsCount: number;
   loading: boolean;
-  selectedOwner: string; // 'All', 'Me', 'Father', 'Mother', 'Family', etc.
-  currency: string; // 'INR', 'USD', 'EUR', 'GBP'
+  selectedOwner: string;
+  currency: string;
   currencySymbol: string;
   toasts: Toast[];
 
@@ -54,77 +57,65 @@ interface FinanceContextType {
 
 const FinanceContext = createContext<FinanceContextType | undefined>(undefined);
 
+const CURRENCY_SYMBOLS: Record<string, string> = {
+  INR: '₹', USD: '$', EUR: '€', GBP: '£',
+};
+
 export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
 
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [owners, setOwners] = useState<AccountOwner[]>([]);
-  const [summary, setSummary] = useState<FinancialSummary | null>(null);
-  const [budgets, setBudgets] = useState<Budget[]>([]);
-  const [goals, setGoals] = useState<Goal[]>([]);
-  const [bills, setBills] = useState<Bill[]>([]);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
-  const [loading, setLoading] = useState<boolean>(true);
-
-  const [selectedOwner, setSelectedOwner] = useState<string>('All');
-  const [currency, setCurrency] = useState<string>('INR');
-  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [transactions, setTransactions]         = useState<Transaction[]>([]);
+  const [owners, setOwners]                     = useState<AccountOwner[]>([]);
+  const [summary, setSummary]                   = useState<FinancialSummary | null>(null);
+  const [budgets, setBudgets]                   = useState<Budget[]>([]);
+  const [goals, setGoals]                       = useState<Goal[]>([]);
+  const [bills, setBills]                       = useState<Bill[]>([]);
+  const [notifications, setNotifications]       = useState<NotificationItem[]>([]);
+  const [unreadNotificationsCount, setUnread]   = useState(0);
+  const [loading, setLoading]                   = useState(true);
+  const [selectedOwner, setSelectedOwner]       = useState('All');
+  const [currency, setCurrency]                 = useState('INR');
+  const [toasts, setToasts]                     = useState<Toast[]>([]);
 
   useEffect(() => {
-    if (user?.defaultCurrency) {
-      setCurrency(user.defaultCurrency);
-    }
+    if (user?.defaultCurrency) setCurrency(user.defaultCurrency);
   }, [user]);
 
-  const currencySymbols: Record<string, string> = {
-    INR: '₹',
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-  };
-
-  const currencySymbol = currencySymbols[currency] || '₹';
+  const currencySymbol = CURRENCY_SYMBOLS[currency] || '₹';
 
   const showToast = (message: string, type: Toast['type'] = 'info') => {
     const id = Date.now().toString() + Math.random().toString().slice(2, 5);
     setToasts((prev) => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts((prev) => prev.filter((t) => t.id !== id));
-    }, 4000);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 4000);
   };
 
-  const removeToast = (id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  };
+  const removeToast = (id: string) => setToasts((prev) => prev.filter((t) => t.id !== id));
 
   const refreshAll = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const ownerParam = selectedOwner !== 'All' ? `?owner=${encodeURIComponent(selectedOwner)}` : '';
+      const ownerFilter = selectedOwner !== 'All' ? selectedOwner : undefined;
 
-      const [txRes, sumRes, ownerRes, budgetRes, goalRes, billRes, notifRes] = await Promise.all([
-        api.get(`/transactions${ownerParam}`),
-        api.get(`/transactions/summary${ownerParam}`),
-        api.get('/owners'),
-        api.get('/budgets'),
-        api.get('/goals'),
-        api.get('/bills'),
-        api.get('/notifications'),
+      const [txs, sum, ownerList, budgetList, goalList, billList, notifResult] = await Promise.all([
+        api.getTransactions(ownerFilter),
+        api.getFinancialSummary(ownerFilter),
+        api.getOwners(),
+        api.getBudgets(),
+        api.getGoals(),
+        api.getBills(),
+        api.getNotifications(),
       ]);
 
-      if (txRes.success) setTransactions(txRes.transactions || []);
-      if (sumRes.success) setSummary(sumRes.summary || null);
-      if (ownerRes.success) setOwners(ownerRes.owners || []);
-      if (budgetRes.success) setBudgets(budgetRes.budgets || []);
-      if (goalRes.success) setGoals(goalRes.goals || []);
-      if (billRes.success) setBills(billRes.bills || []);
-      if (notifRes.success) {
-        setNotifications(notifRes.notifications || []);
-        setUnreadNotificationsCount(notifRes.unreadCount || 0);
-      }
-    } catch (err: any) {
+      setTransactions(txs);
+      setSummary(sum);
+      setOwners(ownerList);
+      setBudgets(budgetList);
+      setGoals(goalList);
+      setBills(billList);
+      setNotifications(notifResult.notifications);
+      setUnread(notifResult.unreadCount);
+    } catch (err: unknown) {
       console.error('Failed to load financial data:', err);
     } finally {
       setLoading(false);
@@ -132,215 +123,170 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
   }, [user, selectedOwner]);
 
   useEffect(() => {
-    if (user) {
-      refreshAll();
-    }
+    if (user) refreshAll();
   }, [user, selectedOwner, refreshAll]);
 
-  // Actions
+  // ── Transactions ──────────────────────────────────────────────────────────
   const addTransaction = async (data: Partial<Transaction>) => {
     try {
-      const res = await api.post('/transactions', data);
-      if (res.success) {
-        showToast('Transaction added successfully!', 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add transaction', 'error');
+      await api.createTransaction(data);
+      showToast('Transaction added successfully!', 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to add transaction', 'error');
     }
   };
 
   const updateTransaction = async (id: string, data: Partial<Transaction>) => {
     try {
-      const res = await api.put(`/transactions/${id}`, data);
-      if (res.success) {
-        showToast('Transaction updated.', 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update transaction', 'error');
+      await api.updateTransaction(id, data);
+      showToast('Transaction updated.', 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update transaction', 'error');
     }
   };
 
   const deleteTransaction = async (id: string) => {
     try {
-      const res = await api.delete(`/transactions/${id}`);
-      if (res.success) {
-        showToast('Transaction deleted.', 'info');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete transaction', 'error');
+      await api.deleteTransaction(id);
+      showToast('Transaction deleted.', 'info');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete transaction', 'error');
     }
   };
 
+  // ── Owners ────────────────────────────────────────────────────────────────
   const addOwner = async (name: string, relationship?: string, color?: string) => {
     try {
-      const res = await api.post('/owners', { name, relationship, color });
-      if (res.success) {
-        showToast(`Account owner "${name}" added.`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add owner', 'error');
+      await api.createOwner(name, relationship, color);
+      showToast(`Account owner "${name}" added.`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to add owner', 'error');
     }
   };
 
   const deleteOwner = async (id: string) => {
     try {
-      const res = await api.delete(`/owners/${id}`);
-      if (res.success) {
-        showToast('Account owner removed.', 'info');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete owner', 'error');
+      await api.deleteOwner(id);
+      showToast('Account owner removed.', 'info');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete owner', 'error');
     }
   };
 
+  // ── Budgets ───────────────────────────────────────────────────────────────
   const saveBudget = async (category: string, amount: number) => {
     try {
-      const res = await api.post('/budgets', { category, amount });
-      if (res.success) {
-        showToast(`Budget set for ${category}.`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to set budget', 'error');
+      await api.upsertBudget(category, amount);
+      showToast(`Budget set for ${category}.`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to set budget', 'error');
     }
   };
 
   const deleteBudget = async (id: string) => {
     try {
-      const res = await api.delete(`/budgets/${id}`);
-      if (res.success) {
-        showToast('Budget removed.', 'info');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete budget', 'error');
+      await api.deleteBudget(id);
+      showToast('Budget removed.', 'info');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete budget', 'error');
     }
   };
 
+  // ── Goals ─────────────────────────────────────────────────────────────────
   const createGoal = async (data: Partial<Goal>) => {
     try {
-      const res = await api.post('/goals', data);
-      if (res.success) {
-        showToast(`Savings goal "${data.name}" created!`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to create goal', 'error');
+      await api.createGoal(data);
+      showToast(`Savings goal "${data.name}" created!`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to create goal', 'error');
     }
   };
 
   const addMoneyToGoal = async (id: string, amount: number) => {
     try {
-      const res = await api.post(`/goals/${id}/add-money`, { amount });
-      if (res.success) {
-        showToast(`Added ${currencySymbol}${amount.toLocaleString()} to goal!`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add money', 'error');
+      await api.addMoneyToGoal(id, amount);
+      showToast(`Added ${currencySymbol}${amount.toLocaleString()} to goal!`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to add money', 'error');
     }
   };
 
   const deleteGoal = async (id: string) => {
     try {
-      const res = await api.delete(`/goals/${id}`);
-      if (res.success) {
-        showToast('Savings goal deleted.', 'info');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete goal', 'error');
+      await api.deleteGoal(id);
+      showToast('Savings goal deleted.', 'info');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete goal', 'error');
     }
   };
 
+  // ── Bills ─────────────────────────────────────────────────────────────────
   const createBill = async (data: Partial<Bill>) => {
     try {
-      const res = await api.post('/bills', data);
-      if (res.success) {
-        showToast(`Bill "${data.name}" added.`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to add bill', 'error');
+      await api.createBill(data);
+      showToast(`Bill "${data.name}" added.`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to add bill', 'error');
     }
   };
 
   const updateBillStatus = async (id: string, status: Bill['status']) => {
     try {
-      const res = await api.put(`/bills/${id}/status`, { status });
-      if (res.success) {
-        showToast(`Bill marked as ${status}.`, 'success');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update bill', 'error');
+      await api.updateBillStatus(id, status);
+      showToast(`Bill marked as ${status}.`, 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update bill', 'error');
     }
   };
 
   const deleteBill = async (id: string) => {
     try {
-      const res = await api.delete(`/bills/${id}`);
-      if (res.success) {
-        showToast('Bill removed.', 'info');
-        await refreshAll();
-      }
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete bill', 'error');
+      await api.deleteBill(id);
+      showToast('Bill removed.', 'info');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to delete bill', 'error');
     }
   };
 
+  // ── Notifications ─────────────────────────────────────────────────────────
   const markNotificationsRead = async (id?: string) => {
     try {
-      await api.put(`/notifications/${id || 'all'}/read`);
+      await api.markNotificationsRead(id);
       await refreshAll();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
     }
   };
 
-  const formatCurrency = (amount: number): string => {
-    return `${currencySymbol}${Math.abs(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
-  };
+  const formatCurrency = (amount: number): string =>
+    `${currencySymbol}${Math.abs(amount).toLocaleString('en-IN', { maximumFractionDigits: 2 })}`;
 
   return (
     <FinanceContext.Provider
       value={{
-        transactions,
-        owners,
-        summary,
-        budgets,
-        goals,
-        bills,
-        notifications,
-        unreadNotificationsCount,
-        loading,
-        selectedOwner,
-        currency,
-        currencySymbol,
-        toasts,
-        setSelectedOwner,
-        setCurrency,
-        showToast,
-        removeToast,
+        transactions, owners, summary, budgets, goals, bills,
+        notifications, unreadNotificationsCount, loading,
+        selectedOwner, currency, currencySymbol, toasts,
+        setSelectedOwner, setCurrency, showToast, removeToast,
         refreshAll,
-        addTransaction,
-        updateTransaction,
-        deleteTransaction,
-        addOwner,
-        deleteOwner,
-        saveBudget,
-        deleteBudget,
-        createGoal,
-        addMoneyToGoal,
-        deleteGoal,
-        createBill,
-        updateBillStatus,
-        deleteBill,
+        addTransaction, updateTransaction, deleteTransaction,
+        addOwner, deleteOwner,
+        saveBudget, deleteBudget,
+        createGoal, addMoneyToGoal, deleteGoal,
+        createBill, updateBillStatus, deleteBill,
         markNotificationsRead,
         formatCurrency,
       }}

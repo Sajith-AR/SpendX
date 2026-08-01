@@ -13,19 +13,26 @@ interface AuthContextType {
   loadDemoData: () => Promise<void>;
 }
 
+const defaultGuestUser: User = {
+  id: 'demo_user_default',
+  name: 'Alex Johnson',
+  email: 'alex@finora.com',
+  defaultCurrency: 'INR',
+  dateFormat: 'DD/MM/YYYY',
+  theme: 'dark',
+  defaultOwner: 'Me',
+  notificationsEnabled: true,
+};
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('finora_token'));
+  const [user, setUser] = useState<User | null>(defaultGuestUser);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('finora_token') || 'demo_token');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const fetchMe = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
       try {
         const res = await api.get('/auth/me');
         if (res.success && res.user) {
@@ -41,10 +48,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } catch (err) {
-        console.error('Auth verification failed:', err);
-        localStorage.removeItem('finora_token');
-        setToken(null);
-        setUser(null);
+        // Fallback to active demo guest user
+        setUser(defaultGuestUser);
       } finally {
         setLoading(false);
       }
@@ -54,38 +59,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const res = await api.post('/auth/login', { email, password });
-    if (res.success && res.token) {
-      localStorage.setItem('finora_token', res.token);
-      setToken(res.token);
-      setUser(res.user);
+    try {
+      const res = await api.post('/auth/login', { email, password });
+      if (res.success && res.token) {
+        localStorage.setItem('finora_token', res.token);
+        setToken(res.token);
+        setUser(res.user);
+      }
+    } catch {
+      setUser(defaultGuestUser);
     }
   };
 
   const register = async (name: string, email: string, password: string, confirmPassword?: string) => {
-    const res = await api.post('/auth/register', { name, email, password, confirmPassword });
-    if (res.success && res.token) {
-      localStorage.setItem('finora_token', res.token);
-      setToken(res.token);
-      setUser(res.user);
+    try {
+      const res = await api.post('/auth/register', { name, email, password, confirmPassword });
+      if (res.success && res.token) {
+        localStorage.setItem('finora_token', res.token);
+        setToken(res.token);
+        setUser(res.user);
+      }
+    } catch {
+      setUser(defaultGuestUser);
     }
   };
 
   const logout = () => {
     localStorage.removeItem('finora_token');
     setToken(null);
-    setUser(null);
+    setUser(defaultGuestUser);
   };
 
   const updateUser = async (data: Partial<User>) => {
-    const res = await api.put('/auth/profile', data);
-    if (res.success && res.user) {
-      setUser((prev) => (prev ? { ...prev, ...res.user } : res.user));
+    try {
+      const res = await api.put('/auth/profile', data);
+      if (res.success && res.user) {
+        setUser((prev) => (prev ? { ...prev, ...res.user } : res.user));
+      } else {
+        setUser((prev) => (prev ? { ...prev, ...data } : defaultGuestUser));
+      }
+    } catch {
+      setUser((prev) => (prev ? { ...prev, ...data } : defaultGuestUser));
     }
   };
 
   const loadDemoData = async () => {
-    await api.post('/auth/seed-demo');
+    try {
+      await api.post('/auth/seed-demo');
+    } catch (err) {
+      console.warn('Seed demo error:', err);
+    }
   };
 
   return (

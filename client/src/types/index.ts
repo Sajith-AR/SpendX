@@ -11,6 +11,7 @@ export interface User {
 
 export interface AccountOwner {
   _id: string;
+  id?: string;
   name: string;
   relationship: string;
   color: string;
@@ -19,6 +20,7 @@ export interface AccountOwner {
 
 export interface Transaction {
   _id: string;
+  id?: string;
   owner: string;
   type: 'income' | 'expense';
   amount: number;
@@ -47,6 +49,7 @@ export interface FinancialSummary {
 
 export interface Budget {
   _id: string;
+  id?: string;
   category: string;
   amount: number;
   spent: number;
@@ -59,6 +62,7 @@ export interface Budget {
 
 export interface Goal {
   _id: string;
+  id?: string;
   name: string;
   targetAmount: number;
   currentAmount: number;
@@ -70,6 +74,7 @@ export interface Goal {
 
 export interface Bill {
   _id: string;
+  id?: string;
   name: string;
   amount: number;
   dueDate: string;
@@ -81,6 +86,7 @@ export interface Bill {
 
 export interface NotificationItem {
   _id: string;
+  id?: string;
   title: string;
   message: string;
   type: 'budget_warning' | 'bill_due' | 'goal_reached' | 'large_expense' | 'info';
