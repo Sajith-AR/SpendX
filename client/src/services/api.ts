@@ -3,7 +3,7 @@ import { Transaction, AccountOwner, FinancialSummary, Budget, Goal, Bill, Notifi
 const API_BASE = '/api';
 
 const getHeaders = () => {
-  const token = localStorage.getItem('finora_token');
+  const token = localStorage.getItem('spendx_token');
   return {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),

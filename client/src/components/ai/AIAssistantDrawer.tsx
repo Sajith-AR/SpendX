@@ -21,7 +21,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
     {
       id: 'welcome',
       sender: 'ai',
-      text: 'Hello! I am your Finora AI Financial Assistant. Ask me anything about your spending, income, or family accounts (e.g. *"What did I spend on 07/05/2026?"* or *"What did my father spend this month?"*). All answers are calculated directly from your real stored transactions!',
+      text: 'Hello! I am your SpendX AI Financial Assistant. Ask me anything about your spending, income, or family accounts (e.g. *"What did I spend on 07/05/2026?"* or *"What did my father spend this month?"*). All answers are calculated directly from your real stored transactions!',
       timestamp: new Date(),
     },
   ]);
@@ -94,7 +94,7 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
                 </div>
                 <div>
                   <h3 className="font-extrabold text-base text-[#F8FAFC] flex items-center gap-1.5">
-                    Finora AI Assistant <Sparkles className="w-4 h-4 text-[#14F195]" />
+                    SpendX AI Assistant <Sparkles className="w-4 h-4 text-[#14F195]" />
                   </h3>
                   <p className="text-xs text-[#94A3B8]">Deterministic NLP • Real DB Aggregation</p>
                 </div>

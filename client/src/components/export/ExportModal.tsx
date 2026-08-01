@@ -31,7 +31,7 @@ export const ExportModal: React.FC<ExportModalProps> = ({ isOpen, onClose }) => 
     if (exportFormat === 'csv') {
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `Finora_Statement_${Date.now()}.csv`);
+      link.setAttribute('download', `SpendX_Statement_${Date.now()}.csv`);
       document.body.appendChild(link);
       link.click();
       link.remove();

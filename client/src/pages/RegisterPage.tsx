@@ -44,7 +44,7 @@ export const RegisterPage: React.FC = () => {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#14F195] to-[#3B82F6] flex items-center justify-center shadow-lg">
               <Sparkles className="w-6 h-6 text-[#0A0F1E]" />
             </div>
-            <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">Finora</span>
+            <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">SpendX</span>
           </Link>
           <h2 className="text-2xl font-extrabold text-[#F8FAFC] tracking-tight">Create Your Account</h2>
           <p className="text-xs text-[#94A3B8]">Start tracking shared & personal finances today.</p>

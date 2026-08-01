@@ -10,7 +10,7 @@ export const exportTransactionsCSV = async (req: AuthRequest, res: Response) => 
     const csvContent = await generateCSVExport(userId, req.query);
 
     res.setHeader('Content-Type', 'text/csv');
-    res.setHeader('Content-Disposition', `attachment; filename=Finora_Statement_${Date.now()}.csv`);
+    res.setHeader('Content-Disposition', `attachment; filename=SpendX_Statement_${Date.now()}.csv`);
     res.status(200).send(csvContent);
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });

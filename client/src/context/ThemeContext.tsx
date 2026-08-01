@@ -11,12 +11,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [theme, setTheme] = useState<Theme>(() => {
-    return (localStorage.getItem('finora_theme') as Theme) || 'dark';
+    return (localStorage.getItem('spendx_theme') as Theme) || 'dark';
   });
 
   useEffect(() => {
     const root = document.documentElement;
-    localStorage.setItem('finora_theme', theme);
+    localStorage.setItem('spendx_theme', theme);
 
     if (theme === 'dark') {
       root.classList.add('dark');

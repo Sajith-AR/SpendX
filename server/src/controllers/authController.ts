@@ -6,7 +6,7 @@ import AccountOwner from '../models/AccountOwner';
 import { seedUserDemoData } from '../utils/seedData';
 import { AuthRequest } from '../middleware/authMiddleware';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'finora_super_secret_jwt_key_2026';
+const JWT_SECRET = process.env.JWT_SECRET || 'spendx_super_secret_jwt_key_2026';
 
 export const register = async (req: Request, res: Response) => {
   try {

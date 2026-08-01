@@ -35,12 +35,12 @@ app.use('/api/export', exportRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', app: 'Finora API Server', timestamp: new Date() });
+  res.json({ status: 'ok', app: 'SpendX API Server', timestamp: new Date() });
 });
 
 // Start Server after DB Connect
 connectDB().then(() => {
   app.listen(PORT, () => {
-    console.log(`[Finora Server] Running on http://localhost:${PORT}`);
+    console.log(`[SpendX Server] Running on http://localhost:${PORT}`);
   });
 });

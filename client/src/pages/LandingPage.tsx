@@ -21,7 +21,7 @@ export const LandingPage: React.FC = () => {
   const handleDemo = async () => {
     try {
       // Demo user direct login
-      await login('demo@finora.com', 'demo123');
+      await login('demo@spendx.com', 'demo123');
       navigate('/dashboard');
     } catch {
       // If demo user doesn't exist yet, direct to register
@@ -74,7 +74,7 @@ export const LandingPage: React.FC = () => {
           <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#14F195] to-[#3B82F6] flex items-center justify-center shadow-lg shadow-[#14F195]/20">
             <Sparkles className="w-6 h-6 text-[#0A0F1E]" />
           </div>
-          <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">Finora</span>
+          <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">SpendX</span>
         </div>
 
         <div className="flex items-center gap-3">
@@ -191,7 +191,7 @@ export const LandingPage: React.FC = () => {
       {/* Footer */}
       <footer className="w-full max-w-7xl mx-auto px-6 py-8 border-t border-[#1E293B] flex flex-col sm:flex-row items-center justify-between text-xs text-[#94A3B8] gap-4 z-10">
         <div className="flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-[#14F195]" /> Finora Secure Financial Engine © 2026
+          <ShieldCheck className="w-4 h-4 text-[#14F195]" /> SpendX Secure Financial Engine © 2026
         </div>
         <p>Built with Next.js, React, TypeScript, Node.js & MongoDB.</p>
       </footer>

@@ -16,7 +16,7 @@ interface AuthContextType {
 const defaultGuestUser: User = {
   id: 'demo_user_default',
   name: 'Alex Johnson',
-  email: 'alex@finora.com',
+  email: 'alex@spendx.com',
   defaultCurrency: 'INR',
   dateFormat: 'DD/MM/YYYY',
   theme: 'dark',
@@ -28,7 +28,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(defaultGuestUser);
-  const [token, setToken] = useState<string | null>(localStorage.getItem('finora_token') || 'demo_token');
+  const [token, setToken] = useState<string | null>(localStorage.getItem('spendx_token') || 'demo_token');
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -48,7 +48,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         }
       } catch (err) {
-        // Fallback to active demo guest user
         setUser(defaultGuestUser);
       } finally {
         setLoading(false);
@@ -62,7 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.post('/auth/login', { email, password });
       if (res.success && res.token) {
-        localStorage.setItem('finora_token', res.token);
+        localStorage.setItem('spendx_token', res.token);
         setToken(res.token);
         setUser(res.user);
       }
@@ -75,7 +74,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const res = await api.post('/auth/register', { name, email, password, confirmPassword });
       if (res.success && res.token) {
-        localStorage.setItem('finora_token', res.token);
+        localStorage.setItem('spendx_token', res.token);
         setToken(res.token);
         setUser(res.user);
       }
@@ -85,7 +84,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = () => {
-    localStorage.removeItem('finora_token');
+    localStorage.removeItem('spendx_token');
     setToken(null);
     setUser(defaultGuestUser);
   };

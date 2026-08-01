@@ -45,7 +45,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAI }) => {
           <Sparkles className="w-6 h-6 text-[#0A0F1E]" />
         </div>
         <div>
-          <h1 className="text-xl font-extrabold text-[#F8FAFC] tracking-wider">Finora</h1>
+          <h1 className="text-xl font-extrabold text-[#F8FAFC] tracking-wider">SpendX</h1>
           <p className="text-xs font-medium text-[#94A3B8]">Smart Personal & Family Finance</p>
         </div>
       </div>

@@ -1,7 +1,7 @@
 {
-  "name": "finora-server",
+  "name": "spendx-server",
   "version": "1.0.0",
-  "description": "Finora Backend API Server",
+  "description": "SpendX Backend API Server",
   "main": "dist/server.js",
   "scripts": {
     "build": "tsc",

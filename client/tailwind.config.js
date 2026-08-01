@@ -5,7 +5,7 @@ export default {
   theme: {
     extend: {
       colors: {
-        finora: {
+        spendx: {
           bg: '#0A0F1E',
           sidebar: '#0F172A',
           card: '#111827',

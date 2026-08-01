@@ -5,7 +5,7 @@ import { Sparkles, ArrowRight, Lock, Mail, AlertCircle } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
-  const { login, loadDemoData } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,12 +31,11 @@ export const LoginPage: React.FC = () => {
     setError('');
     setLoading(true);
     try {
-      await login('demo@finora.com', 'demo123');
+      await login('demo@spendx.com', 'demo123');
       navigate('/dashboard');
     } catch {
-      // If demo user is missing, register it
       try {
-        await login('alex@finora.com', 'password123');
+        await login('alex@spendx.com', 'password123');
         navigate('/dashboard');
       } catch (err: any) {
         setError('Could not auto-login demo. Please register a new account.');
@@ -57,7 +56,7 @@ export const LoginPage: React.FC = () => {
             <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[#14F195] to-[#3B82F6] flex items-center justify-center shadow-lg">
               <Sparkles className="w-6 h-6 text-[#0A0F1E]" />
             </div>
-            <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">Finora</span>
+            <span className="text-2xl font-black text-[#F8FAFC] tracking-wider">SpendX</span>
           </Link>
           <h2 className="text-2xl font-extrabold text-[#F8FAFC] tracking-tight">Welcome Back</h2>
           <p className="text-xs text-[#94A3B8]">Sign in to access your personal & family finances.</p>

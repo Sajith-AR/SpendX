@@ -1,7 +1,7 @@
 {
-  "name": "finora-monorepo",
+  "name": "spendx-monorepo",
   "version": "1.0.0",
-  "description": "Finora Smart Personal & Family Finance Management Platform",
+  "description": "SpendX Smart Personal & Family Finance Management Platform",
   "scripts": {
     "install:all": "npm install --prefix server && npm install --prefix client",
     "dev:server": "cd server && npm run dev",

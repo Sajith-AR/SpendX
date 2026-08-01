@@ -1,6 +1,6 @@
-# Finora — Smart Personal & Family Finance Management Platform
+# SpendX — Smart Personal & Family Finance Management Platform
 
-**Finora** is a portfolio-grade, full-stack personal & family finance platform designed to track spending, manage shared household accounts, build category budgets with visual warning alerts, monitor savings goals, manage upcoming bills, view GitHub-style spending heatmaps, and query real stored financial data with a deterministic 0%-hallucination AI assistant.
+**SpendX** is a portfolio-grade, full-stack personal & family finance platform designed to track spending, manage shared household accounts, build category budgets with visual warning alerts, monitor savings goals, manage upcoming bills, view GitHub-style spending heatmaps, and query real stored financial data with a deterministic 0%-hallucination AI assistant.
 
 ---
 
@@ -60,97 +60,28 @@
 
 ### 1. Install Dependencies
 
-**Option A (Root Convenient Install)**:
 ```bash
 npm run install:all
 ```
 
-**Option B (Manual Install)**:
-```bash
-# Server
-cd server
-npm install
-
-# Client
-cd ../client
-npm install
-```
-
 ### 2. Environment Variables
 
-Create `.env` in `server/` (automatically pre-configured):
+Create `.env` in `server/`:
 ```env
 PORT=5000
-MONGODB_URI=mongodb://localhost:27017/finora
-JWT_SECRET=finora_super_secret_jwt_key_2026
+MONGODB_URI=mongodb://localhost:27017/spendx
+JWT_SECRET=spendx_super_secret_jwt_key_2026
 CLIENT_URL=http://localhost:5173
 ```
-*Note: If `MONGODB_URI` is empty or MongoDB service is not running locally, the server automatically starts an in-memory MongoDB instance (`mongodb-memory-server`), ensuring zero-setup execution.*
 
 ---
 
 ## 💻 Running the Application
 
-### Option A: Run Both Concurrently (Recommended)
 From the project root:
 ```bash
-npm install
 npm run dev
 ```
 
-### Option B: Run Services Separately
-
-**Start Backend Server**:
-```bash
-cd server
-npm run dev
-```
-*Backend runs on http://localhost:5000*
-
-**Start Frontend Client**:
-```bash
-cd client
-npm run dev
-```
-*Frontend runs on http://localhost:5173*
-
----
-
-## 🧪 Seeding Demo Data
-
-To populate realistic sample transactions (including transactions on `07/05/2026`, June/July comparison data, budgets, goals, and bills):
-1. Sign in to the app or click **View Demo** on the landing page.
-2. Go to **Settings** → click **Populate Demo Data**.
-
----
-
-## 📁 Project Structure
-
-```
-SpendX/
-├── client/
-│   ├── src/
-│   │   ├── components/       # UI, Layout, Dashboard, Ledger, Analytics, Heatmap, AI, Budget, Goals, Bills
-│   │   ├── context/          # AuthContext, FinanceContext, ThemeContext
-│   │   ├── pages/            # Landing, Login, Register, Dashboard, Ledger, Analytics, Budgets, Goals, Heatmap, Bills, Family, Settings
-│   │   ├── services/         # API fetch client
-│   │   ├── types/            # TypeScript interface definitions
-│   │   ├── App.tsx
-│   │   └── main.tsx
-│   ├── package.json
-│   └── vite.config.ts
-├── server/
-│   ├── src/
-│   │   ├── config/           # DB connection & MongoMemoryServer fallback
-│   │   ├── controllers/      # Auth, Transaction, Owner, Budget, Goal, Bill, AI, Export controllers
-│   │   ├── middleware/       # JWT Auth Middleware
-│   │   ├── models/           # Mongoose models (User, AccountOwner, Transaction, Budget, Goal, Bill, Notification)
-│   │   ├── routes/           # Express API endpoints
-│   │   ├── services/         # AI Financial Query Engine & CSV/PDF Export Service
-│   │   ├── utils/            # Seed data utility
-│   │   └── server.ts
-│   ├── package.json
-│   └── tsconfig.json
-├── package.json
-└── README.md
-```
+- **Backend Server**: http://localhost:5000
+- **Frontend Client**: http://localhost:5173

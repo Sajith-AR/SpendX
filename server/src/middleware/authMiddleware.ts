@@ -13,7 +13,7 @@ export const authenticateJWT = (req: AuthRequest, res: Response, next: NextFunct
 
   if (authHeader && authHeader.startsWith('Bearer ')) {
     const token = authHeader.split(' ')[1];
-    const secret = process.env.JWT_SECRET || 'finora_super_secret_jwt_key_2026';
+    const secret = process.env.JWT_SECRET || 'spendx_super_secret_jwt_key_2026';
 
     jwt.verify(token, secret, (err: any, decoded: any) => {
       if (err) {
