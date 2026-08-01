@@ -14,9 +14,9 @@ interface AuthContextType {
 }
 
 const defaultGuestUser: User = {
-  id: 'demo_user_default',
-  name: 'Alex Johnson',
-  email: 'alex@spendx.com',
+  id: '65f1a2b3c4d5e6f708192a3b',
+  name: 'Sajith',
+  email: 'sajith@spendx.com',
   defaultCurrency: 'INR',
   dateFormat: 'DD/MM/YYYY',
   theme: 'dark',
@@ -38,8 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (res.success && res.user) {
           setUser({
             id: res.user._id,
-            name: res.user.name,
-            email: res.user.email,
+            name: res.user.name || 'Sajith',
+            email: res.user.email || 'sajith@spendx.com',
             defaultCurrency: res.user.defaultCurrency || 'INR',
             dateFormat: res.user.dateFormat || 'DD/MM/YYYY',
             theme: res.user.theme || 'dark',

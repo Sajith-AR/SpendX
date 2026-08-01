@@ -7,7 +7,14 @@ import Notification from '../models/Notification';
 import AccountOwner from '../models/AccountOwner';
 
 export const seedUserDemoData = async (userId: string) => {
-  const userObjId = new mongoose.Types.ObjectId(userId);
+  let userObjId: mongoose.Types.ObjectId;
+  try {
+    userObjId = mongoose.Types.ObjectId.isValid(userId)
+      ? new mongoose.Types.ObjectId(userId)
+      : new mongoose.Types.ObjectId('65f1a2b3c4d5e6f708192a3b');
+  } catch {
+    userObjId = new mongoose.Types.ObjectId('65f1a2b3c4d5e6f708192a3b');
+  }
 
   // Clear existing transactions, budgets, goals, bills for this user
   await Transaction.deleteMany({ user: userObjId });
