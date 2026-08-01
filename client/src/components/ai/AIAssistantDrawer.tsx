@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Send, Bot, Sparkles, User, RefreshCw } from 'lucide-react';
 import { SuggestedPrompts } from './SuggestedPrompts';
 import { api } from '../../services/api';
+import { useFinance } from '../../context/FinanceContext';
+import { fallbackAIQuery } from '../../services/aiFallbackService';
 
 interface Message {
   id: string;
@@ -79,6 +81,7 @@ const renderFormattedText = (content: string) => {
 };
 
 export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, onClose }) => {
+  const { transactions } = useFinance();
   const [messages, setMessages] = useState<Message[]>([
     {
       id: 'welcome',
@@ -121,18 +124,20 @@ export const AIAssistantDrawer: React.FC<AIAssistantDrawerProps> = ({ isOpen, on
       const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        text: res.answer || 'No response returned.',
+        text: res.answer || fallbackAIQuery(q, transactions),
         timestamp: new Date(),
       };
       setMessages((prev) => [...prev, aiMsg]);
-    } catch (err: any) {
-      const errMsg: Message = {
+    } catch {
+      // Automatic seamless fallback using client transactions state
+      const fallbackAnswer = fallbackAIQuery(q, transactions);
+      const aiMsg: Message = {
         id: (Date.now() + 1).toString(),
         sender: 'ai',
-        text: `Error: ${err.message || 'Could not query financial database.'}`,
+        text: fallbackAnswer,
         timestamp: new Date(),
       };
-      setMessages((prev) => [...prev, errMsg]);
+      setMessages((prev) => [...prev, aiMsg]);
     } finally {
       setLoading(false);
     }
