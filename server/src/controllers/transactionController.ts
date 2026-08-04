@@ -1,5 +1,6 @@
 import { Response } from 'express';
 import Transaction from '../models/Transaction';
+import AccountOwner from '../models/AccountOwner';
 import { AuthRequest } from '../middleware/authMiddleware';
 import mongoose from 'mongoose';
 
@@ -66,7 +67,7 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
 export const createTransaction = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const { owner = 'Me', type, amount, category, description, date, paymentMethod, notes } = req.body;
+    const { owner = 'Son (Sajith)', type, amount, category, description, date, paymentMethod, notes } = req.body;
 
     if (!type || !amount || !category || !description) {
       return res.status(400).json({ success: false, message: 'Please provide type, amount, category, and description.' });
@@ -140,6 +141,9 @@ export const getFinancialSummary = async (req: AuthRequest, res: Response) => {
     const userId = new mongoose.Types.ObjectId(req.user?.id);
     const { owner } = req.query;
 
+    // Fetch account owners to retrieve initial balances
+    const ownersList = await AccountOwner.find({ user: userId });
+
     const matchOwnerFilter: any = owner && owner !== 'All' ? { owner } : {};
 
     const pipeline = [
@@ -158,10 +162,22 @@ export const getFinancialSummary = async (req: AuthRequest, res: Response) => {
     let totalExpense = 0;
     let myIncome = 0;
     let myExpense = 0;
+    let dadIncome = 0;
+    let dadExpense = 0;
     let familyIncome = 0;
     let familyExpense = 0;
 
-    const ownerBreakdown: Record<string, { income: number; expense: number; balance: number }> = {};
+    const ownerBreakdown: Record<string, { initialBalance: number; income: number; expense: number; balance: number }> = {};
+
+    // Initialize breakdown from AccountOwner records
+    ownersList.forEach((o) => {
+      ownerBreakdown[o.name] = {
+        initialBalance: o.initialBalance || 0,
+        income: 0,
+        expense: 0,
+        balance: o.initialBalance || 0,
+      };
+    });
 
     results.forEach((item) => {
       const ownerName = item._id.owner;
@@ -169,27 +185,53 @@ export const getFinancialSummary = async (req: AuthRequest, res: Response) => {
       const amt = item.total;
 
       if (!ownerBreakdown[ownerName]) {
-        ownerBreakdown[ownerName] = { income: 0, expense: 0, balance: 0 };
+        ownerBreakdown[ownerName] = { initialBalance: 0, income: 0, expense: 0, balance: 0 };
       }
 
       if (type === 'income') {
         ownerBreakdown[ownerName].income += amt;
         totalIncome += amt;
-        if (ownerName === 'Me') myIncome += amt;
-        else familyIncome += amt;
+        if (ownerName.toLowerCase().includes('dad') || ownerName.toLowerCase().includes('father')) {
+          dadIncome += amt;
+        } else if (ownerName.toLowerCase().includes('son') || ownerName.toLowerCase().includes('me') || ownerName.toLowerCase().includes('sajith')) {
+          myIncome += amt;
+        } else {
+          familyIncome += amt;
+        }
       } else {
         ownerBreakdown[ownerName].expense += amt;
         totalExpense += amt;
-        if (ownerName === 'Me') myExpense += amt;
-        else familyExpense += amt;
+        if (ownerName.toLowerCase().includes('dad') || ownerName.toLowerCase().includes('father')) {
+          dadExpense += amt;
+        } else if (ownerName.toLowerCase().includes('son') || ownerName.toLowerCase().includes('me') || ownerName.toLowerCase().includes('sajith')) {
+          myExpense += amt;
+        } else {
+          familyExpense += amt;
+        }
       }
 
-      ownerBreakdown[ownerName].balance = ownerBreakdown[ownerName].income - ownerBreakdown[ownerName].expense;
+      ownerBreakdown[ownerName].balance =
+        (ownerBreakdown[ownerName].initialBalance || 0) +
+        ownerBreakdown[ownerName].income -
+        ownerBreakdown[ownerName].expense;
     });
 
-    const totalBalance = totalIncome - totalExpense;
-    const myBalance = myIncome - myExpense;
-    const familyBalance = familyIncome - familyExpense;
+    let totalInitial = 0;
+    Object.values(ownerBreakdown).forEach((o) => {
+      totalInitial += o.initialBalance || 0;
+    });
+
+    const sonOwner = Object.keys(ownerBreakdown).find(k => k.toLowerCase().includes('son') || k.toLowerCase().includes('me') || k.toLowerCase().includes('sajith'));
+    const dadOwner = Object.keys(ownerBreakdown).find(k => k.toLowerCase().includes('dad') || k.toLowerCase().includes('father'));
+
+    const sonInitial = sonOwner ? ownerBreakdown[sonOwner].initialBalance : 45000;
+    const dadInitial = dadOwner ? ownerBreakdown[dadOwner].initialBalance : 150000;
+
+    const sonBalance = sonInitial + myIncome - myExpense;
+    const dadBalance = dadInitial + dadIncome - dadExpense;
+    const familyBalance = (ownerBreakdown['Family']?.initialBalance || 0) + familyIncome - familyExpense;
+
+    const totalBalance = totalInitial + totalIncome - totalExpense;
     const savings = totalIncome - totalExpense;
     const savingsRate = totalIncome > 0 ? Math.max(0, Math.round((savings / totalIncome) * 100)) : 0;
 
@@ -197,7 +239,9 @@ export const getFinancialSummary = async (req: AuthRequest, res: Response) => {
       success: true,
       summary: {
         totalBalance,
-        myBalance,
+        myBalance: sonBalance,
+        sonBalance,
+        dadBalance,
         familyBalance,
         totalIncome,
         totalExpense,

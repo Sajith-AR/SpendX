@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Calendar } from 'lucide-react';
+import { Calendar, Users } from 'lucide-react';
 
 export const HeaderWidget: React.FC = () => {
   const { user } = useAuth();
@@ -25,14 +25,19 @@ export const HeaderWidget: React.FC = () => {
       <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#14F195]/10 via-[#3B82F6]/10 to-transparent blur-3xl pointer-events-none" />
 
       <div>
-        <span className="text-xs sm:text-sm font-semibold text-[#14F195] tracking-wider uppercase">
-          {getGreeting()}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="text-xs sm:text-sm font-semibold text-[#14F195] tracking-wider uppercase">
+            {getGreeting()}
+          </span>
+          <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#3B82F6]/20 text-[#3B82F6] border border-[#3B82F6]/30 flex items-center gap-1">
+            <Users className="w-3 h-3" /> Shared Father & Son Account
+          </span>
+        </div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tracking-tight mt-1">
-          Welcome back, {user?.name || 'User'}
+          Welcome back, {user?.name || 'Sajith'}
         </h2>
         <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
-          Here is your financial portfolio summary for shared & personal accounts.
+          Here is your shared Dad & Son financial portfolio summary.
         </p>
       </div>
 

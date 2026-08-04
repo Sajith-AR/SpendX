@@ -7,33 +7,40 @@ import { motion } from 'framer-motion';
 export const BalanceCards: React.FC = () => {
   const { summary, formatCurrency } = useFinance();
 
+  // Extract Dad and Son specific balances from ownerBreakdown or summary
+  const sonBalance = summary?.sonBalance ?? summary?.myBalance ?? 0;
+  const dadBalance = summary?.dadBalance ?? (summary?.ownerBreakdown?.['Dad']?.balance || 150000);
+
   const cards = [
     {
-      title: 'Total Balance',
-      value: formatCurrency(summary?.totalBalance || 0),
+      title: 'Total Combined Balance',
+      value: formatCurrency(summary?.totalBalance || (sonBalance + dadBalance)),
       change: '+14.2%',
       isPositive: true,
       icon: Wallet,
       color: '#14F195',
       sparklineData: [40, 45, 55, 60, 75, 80, 92],
+      subtext: 'Son + Dad Total',
     },
     {
-      title: 'My Balance',
-      value: formatCurrency(summary?.myBalance || 0),
+      title: "Son (Sajith)'s Balance",
+      value: formatCurrency(sonBalance),
       change: '+8.5%',
       isPositive: true,
       icon: UserCheck,
-      color: '#3B82F6',
+      color: '#14F195',
       sparklineData: [20, 25, 30, 28, 35, 42, 50],
+      subtext: 'Personal Funds',
     },
     {
-      title: 'Family Balance',
-      value: formatCurrency(summary?.familyBalance || 0),
-      change: '+5.7%',
+      title: "Dad's Balance",
+      value: formatCurrency(dadBalance),
+      change: '+6.8%',
       isPositive: true,
       icon: Users,
-      color: '#8B5CF6',
-      sparklineData: [30, 32, 38, 40, 45, 48, 55],
+      color: '#3B82F6',
+      sparklineData: [30, 35, 38, 42, 45, 48, 55],
+      subtext: 'Father Funds',
     },
     {
       title: 'Monthly Income',
@@ -43,6 +50,7 @@ export const BalanceCards: React.FC = () => {
       icon: TrendingUp,
       color: '#22C55E',
       sparklineData: [60, 65, 70, 75, 80, 85, 90],
+      subtext: 'Combined Earnings',
     },
     {
       title: 'Monthly Expenses',
@@ -52,15 +60,17 @@ export const BalanceCards: React.FC = () => {
       icon: TrendingDown,
       color: '#EF4444',
       sparklineData: [80, 75, 70, 68, 62, 58, 52],
+      subtext: 'Combined Outflow',
     },
     {
-      title: 'Savings',
+      title: 'Total Savings',
       value: formatCurrency(summary?.savings || 0),
       change: '+18.1%',
       isPositive: true,
       icon: PiggyBank,
-      color: '#14F195',
+      color: '#8B5CF6',
       sparklineData: [10, 20, 25, 35, 40, 50, 65],
+      subtext: 'Retained Capital',
     },
     {
       title: 'Savings Rate',
@@ -70,6 +80,7 @@ export const BalanceCards: React.FC = () => {
       icon: Percent,
       color: '#F59E0B',
       sparklineData: [30, 35, 40, 42, 48, 52, 60],
+      subtext: 'Efficiency Rate',
     },
   ];
 
@@ -113,7 +124,7 @@ export const BalanceCards: React.FC = () => {
                 {card.isPositive ? <ArrowUpRight className="w-3.5 h-3.5" /> : <ArrowDownRight className="w-3.5 h-3.5" />}
                 {card.change}
               </span>
-              <span className="text-[#94A3B8] text-[11px] font-medium">vs last month</span>
+              <span className="text-[#94A3B8] text-[11px] font-medium">{card.subtext}</span>
             </div>
           </motion.div>
         );

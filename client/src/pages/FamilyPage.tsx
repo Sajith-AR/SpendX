@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Users, Plus, Trash2, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft } from 'lucide-react';
+import { Users, Plus, Trash2, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, HeartHandshake } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
 
 export const FamilyPage: React.FC = () => {
@@ -23,13 +23,14 @@ export const FamilyPage: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-extrabold text-[#F8FAFC] tracking-tight flex items-center gap-2">
-            <Users className="w-7 h-7 text-[#3B82F6]" /> Shared Family Accounts & Owners
+            <HeartHandshake className="w-7 h-7 text-[#14F195]" /> Shared Father & Son Account
           </h2>
           <p className="text-xs sm:text-sm text-[#94A3B8] mt-1">
-            Manage individual vs combined household balances across family members (Me, Father, Mother, Sibling, etc.).
+            Manage individual balances and joint household finances between Dad and Son (Sajith).
           </p>
         </div>
 
@@ -37,29 +38,30 @@ export const FamilyPage: React.FC = () => {
           onClick={() => setIsAddOpen(true)}
           className="px-4 py-2.5 rounded-2xl bg-[#3B82F6] hover:bg-[#2563eb] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20"
         >
-          <Plus className="w-4 h-4" /> Add Account Owner
+          <Plus className="w-4 h-4" /> Add Account Member
         </button>
       </div>
 
       {/* Combined Balance Card */}
       <div className="p-6 sm:p-8 rounded-3xl glass-card border border-[#1E293B] relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-80 h-80 bg-[#3B82F6]/10 blur-3xl pointer-events-none" />
+        <div className="absolute top-0 right-0 w-80 h-80 bg-[#14F195]/10 blur-3xl pointer-events-none" />
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <span className="text-xs font-bold text-[#3B82F6] uppercase tracking-wider">
-              Combined Household Balance
+            <span className="text-xs font-bold text-[#14F195] uppercase tracking-wider">
+              Total Combined Household Balance
             </span>
             <h1 className="text-3xl sm:text-4xl font-black text-[#F8FAFC] tracking-tight mt-1">
               {formatCurrency(summary?.totalBalance || 0)}
             </h1>
+            <p className="text-xs text-[#94A3B8] mt-1">Son Balance + Dad Balance + Joint Family Funds</p>
           </div>
           <div className="flex items-center gap-6 text-xs sm:text-sm font-semibold">
             <div>
-              <p className="text-[#94A3B8]">Total Household Income</p>
+              <p className="text-[#94A3B8]">Total Earnings</p>
               <p className="text-lg font-bold text-[#22C55E]">+{formatCurrency(summary?.totalIncome || 0)}</p>
             </div>
             <div>
-              <p className="text-[#94A3B8]">Total Household Expenses</p>
+              <p className="text-[#94A3B8]">Total Expenses</p>
               <p className="text-lg font-bold text-[#EF4444]">-{formatCurrency(summary?.totalExpense || 0)}</p>
             </div>
           </div>
@@ -67,18 +69,18 @@ export const FamilyPage: React.FC = () => {
       </div>
 
       {/* Owner Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {owners.map((owner) => {
-          const metrics = ownerBreakdown[owner.name] || { income: 0, expense: 0, balance: 0 };
+          const metrics = ownerBreakdown[owner.name] || { initialBalance: 0, income: 0, expense: 0, balance: 0 };
           return (
             <div
               key={owner._id}
-              className="p-6 rounded-3xl glass-card border border-[#1E293B] space-y-4 relative group"
+              className="p-6 rounded-3xl glass-card border border-[#1E293B] space-y-4 relative group hover:border-[#14F195]/40 transition-all"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div
-                    className="w-10 h-10 rounded-2xl flex items-center justify-center font-bold text-white shadow-md"
+                    className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-white shadow-md text-base"
                     style={{ backgroundColor: owner.color || '#3B82F6' }}
                   >
                     {owner.name[0].toUpperCase()}
@@ -102,8 +104,8 @@ export const FamilyPage: React.FC = () => {
               </div>
 
               <div className="space-y-1 pt-2">
-                <p className="text-xs font-semibold text-[#94A3B8]">Individual Balance</p>
-                <p className={`text-2xl font-extrabold ${metrics.balance >= 0 ? 'text-[#F8FAFC]' : 'text-[#EF4444]'}`}>
+                <p className="text-xs font-semibold text-[#94A3B8]">Current Available Balance</p>
+                <p className={`text-2xl font-black ${metrics.balance >= 0 ? 'text-[#14F195]' : 'text-[#EF4444]'}`}>
                   {formatCurrency(metrics.balance)}
                 </p>
               </div>
@@ -128,16 +130,16 @@ export const FamilyPage: React.FC = () => {
       </div>
 
       {/* Add Owner Modal */}
-      <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add Family Account Owner">
+      <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add Family Account Member">
         <form onSubmit={handleAddOwner} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-[#94A3B8] uppercase mb-1">Owner Name</label>
+            <label className="block text-xs font-semibold text-[#94A3B8] uppercase mb-1">Member Name</label>
             <input
               type="text"
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Sibling, Spouse, Grandmother..."
+              placeholder="e.g. Dad, Sibling, Grandfather..."
               className="w-full bg-[#0F172A] border border-[#1E293B] rounded-2xl px-4 py-2.5 text-sm text-[#F8FAFC]"
             />
           </div>
@@ -150,10 +152,11 @@ export const FamilyPage: React.FC = () => {
                 onChange={(e) => setRelationship(e.target.value)}
                 className="w-full bg-[#0F172A] border border-[#1E293B] rounded-2xl px-3 py-2.5 text-sm text-[#F8FAFC]"
               >
+                <option value="Father">Father / Dad</option>
+                <option value="Son">Son / Sajith</option>
                 <option value="Family">Family</option>
                 <option value="Spouse">Spouse</option>
                 <option value="Sibling">Sibling</option>
-                <option value="Child">Child</option>
                 <option value="Other">Other</option>
               </select>
             </div>
@@ -173,7 +176,7 @@ export const FamilyPage: React.FC = () => {
             type="submit"
             className="w-full py-3.5 rounded-2xl bg-[#3B82F6] hover:bg-[#2563eb] text-white font-extrabold text-sm transition-colors mt-2"
           >
-            Create Account Owner
+            Create Account Member
           </button>
         </form>
       </Modal>

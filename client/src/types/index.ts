@@ -15,6 +15,7 @@ export interface AccountOwner {
   name: string;
   relationship: string;
   color: string;
+  initialBalance?: number;
   isSystem: boolean;
 }
 
@@ -35,6 +36,8 @@ export interface Transaction {
 export interface FinancialSummary {
   totalBalance: number;
   myBalance: number;
+  sonBalance: number;
+  dadBalance: number;
   familyBalance: number;
   totalIncome: number;
   totalExpense: number;
@@ -44,7 +47,7 @@ export interface FinancialSummary {
   familyExpense: number;
   savings: number;
   savingsRate: number;
-  ownerBreakdown: Record<string, { income: number; expense: number; balance: number }>;
+  ownerBreakdown: Record<string, { initialBalance?: number; income: number; expense: number; balance: number }>;
 }
 
 export interface Budget {

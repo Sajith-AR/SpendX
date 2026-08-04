@@ -5,6 +5,7 @@ export interface IAccountOwner extends Document {
   name: string;
   relationship: string; // 'Me', 'Father', 'Mother', 'Spouse', 'Sibling', 'Child', 'Family', 'Other'
   color: string;
+  initialBalance: number;
   isSystem: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -16,6 +17,7 @@ const AccountOwnerSchema: Schema = new Schema(
     name: { type: String, required: true, trim: true },
     relationship: { type: String, default: 'Family' },
     color: { type: String, default: '#3B82F6' },
+    initialBalance: { type: Number, default: 0 },
     isSystem: { type: Boolean, default: false },
   },
   { timestamps: true }
