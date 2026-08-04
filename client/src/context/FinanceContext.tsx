@@ -38,6 +38,7 @@ interface FinanceContextType {
   deleteTransaction: (id: string) => Promise<void>;
 
   addOwner: (name: string, relationship?: string, color?: string) => Promise<void>;
+  updateInitialBalances: (balances: Record<string, number>) => Promise<void>;
   deleteOwner: (id: string) => Promise<void>;
 
   saveBudget: (category: string, amount: number) => Promise<void>;
@@ -168,6 +169,16 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   };
 
+  const updateInitialBalances = async (balances: Record<string, number>) => {
+    try {
+      await api.updateInitialBalances(balances);
+      showToast('Account balances updated!', 'success');
+      await refreshAll();
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update balances', 'error');
+    }
+  };
+
   const deleteOwner = async (id: string) => {
     try {
       await api.deleteOwner(id);
@@ -283,7 +294,7 @@ export const FinanceProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setSelectedOwner, setCurrency, showToast, removeToast,
         refreshAll,
         addTransaction, updateTransaction, deleteTransaction,
-        addOwner, deleteOwner,
+        addOwner, updateInitialBalances, deleteOwner,
         saveBudget, deleteBudget,
         createGoal, addMoneyToGoal, deleteGoal,
         createBill, updateBillStatus, deleteBill,

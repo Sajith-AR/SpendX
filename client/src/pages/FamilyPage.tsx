@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { useFinance } from '../context/FinanceContext';
-import { Users, Plus, Trash2, ShieldCheck, Wallet, ArrowUpRight, ArrowDownLeft, HeartHandshake } from 'lucide-react';
+import { Users, Plus, Trash2, Sliders, ArrowUpRight, ArrowDownLeft, HeartHandshake } from 'lucide-react';
 import { Modal } from '../components/ui/Modal';
+import { EditBalancesModal } from '../components/dashboard/EditBalancesModal';
 
 export const FamilyPage: React.FC = () => {
   const { owners, summary, addOwner, deleteOwner, formatCurrency } = useFinance();
 
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isEditBalancesOpen, setIsEditBalancesOpen] = useState(false);
   const [name, setName] = useState('');
   const [relationship, setRelationship] = useState('Family');
   const [color, setColor] = useState('#3B82F6');
@@ -34,12 +36,21 @@ export const FamilyPage: React.FC = () => {
           </p>
         </div>
 
-        <button
-          onClick={() => setIsAddOpen(true)}
-          className="px-4 py-2.5 rounded-2xl bg-[#3B82F6] hover:bg-[#2563eb] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20"
-        >
-          <Plus className="w-4 h-4" /> Add Account Member
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsEditBalancesOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-[#14F195]/15 hover:bg-[#14F195]/30 border border-[#14F195]/40 text-[#14F195] font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-md"
+          >
+            <Sliders className="w-4 h-4" /> Edit Balances
+          </button>
+
+          <button
+            onClick={() => setIsAddOpen(true)}
+            className="px-4 py-2.5 rounded-2xl bg-[#3B82F6] hover:bg-[#2563eb] text-white font-extrabold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition-all shadow-md shadow-blue-500/20"
+          >
+            <Plus className="w-4 h-4" /> Add Account Member
+          </button>
+        </div>
       </div>
 
       {/* Combined Balance Card */}
@@ -129,7 +140,9 @@ export const FamilyPage: React.FC = () => {
         })}
       </div>
 
-      {/* Add Owner Modal */}
+      {/* Modals */}
+      <EditBalancesModal isOpen={isEditBalancesOpen} onClose={() => setIsEditBalancesOpen(false)} />
+
       <Modal isOpen={isAddOpen} onClose={() => setIsAddOpen(false)} title="Add Family Account Member">
         <form onSubmit={handleAddOwner} className="space-y-4">
           <div>
@@ -139,7 +152,7 @@ export const FamilyPage: React.FC = () => {
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Dad, Sibling, Grandfather..."
+              placeholder="e.g. Sibling, Grandfather..."
               className="w-full bg-[#0F172A] border border-[#1E293B] rounded-2xl px-4 py-2.5 text-sm text-[#F8FAFC]"
             />
           </div>

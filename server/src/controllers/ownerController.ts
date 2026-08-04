@@ -11,13 +11,11 @@ export const getAccountOwners = async (req: AuthRequest, res: Response) => {
     let owners = await AccountOwner.find({ user: userId }).sort({ isSystem: -1, createdAt: 1 });
 
     if (owners.length === 0) {
-      // Create defaults if not found
       const userObjId = new mongoose.Types.ObjectId(userId);
       const defaultOwners = [
-        { user: userObjId, name: 'Me', relationship: 'Me', color: '#14F195', isSystem: true },
-        { user: userObjId, name: 'Father', relationship: 'Father', color: '#3B82F6', isSystem: true },
-        { user: userObjId, name: 'Mother', relationship: 'Mother', color: '#8B5CF6', isSystem: true },
-        { user: userObjId, name: 'Family', relationship: 'Family', color: '#F59E0B', isSystem: true },
+        { user: userObjId, name: 'Son (Sajith)', relationship: 'Me', color: '#14F195', initialBalance: 200, isSystem: true },
+        { user: userObjId, name: 'Dad', relationship: 'Father', color: '#3B82F6', initialBalance: 500, isSystem: true },
+        { user: userObjId, name: 'Family', relationship: 'Family', color: '#F59E0B', initialBalance: 0, isSystem: true },
       ];
       owners = await AccountOwner.insertMany(defaultOwners);
     }
@@ -31,7 +29,7 @@ export const getAccountOwners = async (req: AuthRequest, res: Response) => {
 export const createAccountOwner = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
-    const { name, relationship = 'Other', color = '#3B82F6' } = req.body;
+    const { name, relationship = 'Other', color = '#3B82F6', initialBalance = 0 } = req.body;
 
     if (!name) {
       return res.status(400).json({ success: false, message: 'Owner name is required.' });
@@ -47,10 +45,34 @@ export const createAccountOwner = async (req: AuthRequest, res: Response) => {
       name,
       relationship,
       color,
+      initialBalance: Number(initialBalance) || 0,
       isSystem: false,
     });
 
     res.status(201).json({ success: true, owner });
+  } catch (error: any) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const updateInitialBalances = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    const { balances } = req.body; // Array of { ownerId or ownerName, initialBalance } or object map
+
+    if (!balances || typeof balances !== 'object') {
+      return res.status(400).json({ success: false, message: 'Please provide balances map.' });
+    }
+
+    for (const [ownerName, amount] of Object.entries(balances)) {
+      await AccountOwner.findOneAndUpdate(
+        { user: userId, name: new RegExp(`^${ownerName}$`, 'i') },
+        { initialBalance: Number(amount) }
+      );
+    }
+
+    const updatedOwners = await AccountOwner.find({ user: userId });
+    res.json({ success: true, owners: updatedOwners });
   } catch (error: any) {
     res.status(500).json({ success: false, message: error.message });
   }

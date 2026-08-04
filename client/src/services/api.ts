@@ -85,6 +85,11 @@ export const createOwner = async (name: string, relationship?: string, color?: s
   return res.owner;
 };
 
+export const updateInitialBalances = async (balances: Record<string, number>): Promise<AccountOwner[]> => {
+  const res = await api.put('/owners/balances', { balances });
+  return res.owners || [];
+};
+
 export const deleteOwner = async (id: string): Promise<void> => {
   await api.delete(`/owners/${id}`);
 };
