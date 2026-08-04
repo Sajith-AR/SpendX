@@ -8,6 +8,16 @@ interface QueryResult {
   transactions?: any[];
 }
 
+const DEFAULT_HELP_MESSAGE = `I couldn't understand that question. I am your SpendX AI Financial Assistant.
+
+You can ask me questions like:
+• *"What did I spend today?"*
+• *"What did I spend on 07/05/2026?"*
+• *"Show my food expenses"*
+• *"What did my father spend this month?"*
+• *"What is my highest expense?"*
+• *"Give me my monthly summary"*`;
+
 export const processFinancialQuery = async (userId: string, question: string): Promise<QueryResult> => {
   let userObjId: mongoose.Types.ObjectId;
   try {
@@ -28,11 +38,22 @@ export const processFinancialQuery = async (userId: string, question: string): P
   const now = new Date();
   const currentYear = now.getFullYear();
 
-  // 0. Handle Greetings & Small Talk
-  const greetings = ['hi', 'hello', 'hey', 'hola', 'good morning', 'good afternoon', 'good evening', 'help', 'who are you'];
-  if (greetings.includes(text) || text.startsWith('hi ') || text.startsWith('hello ')) {
+  // Recognize financial keywords & intent
+  const financialKeywords = [
+    'spend', 'spent', 'expense', 'expenses', 'income', 'earned', 'earning', 'earnings',
+    'balance', 'summary', 'today', 'yesterday', 'this week', 'this month', 'june', 'july',
+    'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march', 'april', 'may',
+    'highest', 'lowest', 'largest', 'smallest', 'most', 'food', 'transport', 'shopping',
+    'bills', 'health', 'entertainment', 'salary', 'father', 'dad', 'mother', 'family', 'sajith', 'son',
+    'compare', 'category'
+  ];
+
+  const hasFinancialIntent = financialKeywords.some((kw) => text.includes(kw)) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(text);
+
+  // 0. Handle Greetings, Unknown, Gibberish or Unrecognized Prompts
+  if (!hasFinancialIntent) {
     return {
-      reply: `Hello Sajith! 👋 I am your SpendX AI Financial Assistant. How can I help you manage your money today?\n\nYou can ask me questions like:\n• *"What did I spend today?"*\n• *"What did I spend on 07/05/2026?"*\n• *"Show my food expenses"*\n• *"What did my father spend this month?"*\n• *"What is my highest expense?"*\n• *"Give me my monthly summary"*`,
+      reply: `Hello Sajith! 👋 ${DEFAULT_HELP_MESSAGE}`,
     };
   }
 
@@ -53,10 +74,10 @@ export const processFinancialQuery = async (userId: string, question: string): P
 
   // Extract owner filter
   let ownerFilter: string | undefined = undefined;
-  if (text.includes('father') || text.includes("father's")) ownerFilter = 'Father';
-  else if (text.includes('mother') || text.includes("mother's")) ownerFilter = 'Mother';
-  else if (text.includes('family') || text.includes("family's")) ownerFilter = 'Family';
-  else if (text.includes('my ') || text.includes(' i ') || text.startsWith('what did i') || text.startsWith('how much did i') || text.startsWith('show my')) ownerFilter = 'Me';
+  if (text.includes('father') || text.includes('dad')) ownerFilter = 'Dad';
+  else if (text.includes('mother')) ownerFilter = 'Mother';
+  else if (text.includes('family')) ownerFilter = 'Family';
+  else if (text.includes('my ') || text.includes(' i ') || text.includes('son') || text.includes('sajith') || text.startsWith('what did i') || text.startsWith('how much did i') || text.startsWith('show my')) ownerFilter = 'Son (Sajith)';
 
   // 1. Check for specific numeric date (e.g. 07/05/2026, 07-05-2026, 2026-07-05)
   const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/;
@@ -193,7 +214,6 @@ export const processFinancialQuery = async (userId: string, question: string): P
     endDate = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59);
     periodTitle = specificDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
   } else {
-    // Default to current month or overall filter
     startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
     endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     periodTitle = 'Current Period';
@@ -206,7 +226,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
   };
 
   if (ownerFilter) {
-    dbQuery.owner = ownerFilter;
+    dbQuery.owner = new RegExp(ownerFilter, 'i');
   }
 
   // Category filter
@@ -221,11 +241,10 @@ export const processFinancialQuery = async (userId: string, question: string): P
   const items = await Transaction.find(dbQuery).sort({ date: -1 });
 
   if (items.length === 0) {
-    // If no transactions found for explicit query date/range, try query across all dates for that category/owner
     delete dbQuery.date;
     const fallbackItems = await Transaction.find(dbQuery).sort({ date: -1 }).limit(10);
     if (fallbackItems.length === 0) {
-      return { reply: 'No transactions were found for this period.' };
+      return { reply: DEFAULT_HELP_MESSAGE };
     }
     items.push(...fallbackItems);
   }
