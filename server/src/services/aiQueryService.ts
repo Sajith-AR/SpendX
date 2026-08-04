@@ -45,16 +45,14 @@ export const processFinancialQuery = async (userId: string, question: string): P
     'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march', 'april', 'may',
     'highest', 'lowest', 'largest', 'smallest', 'most', 'food', 'transport', 'shopping',
     'bills', 'health', 'entertainment', 'salary', 'father', 'dad', 'mother', 'family', 'sajith', 'son',
-    'compare', 'category'
+    'compare', 'category', 'how much'
   ];
 
   const hasFinancialIntent = financialKeywords.some((kw) => text.includes(kw)) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(text);
 
-  // 0. Handle Greetings, Unknown, Gibberish or Unrecognized Prompts
+  // Handle Unrecognized Prompts / Gibberish
   if (!hasFinancialIntent) {
-    return {
-      reply: `Hello Sajith! 👋 ${DEFAULT_HELP_MESSAGE}`,
-    };
+    return { reply: DEFAULT_HELP_MESSAGE };
   }
 
   const monthMap: Record<string, number> = {
@@ -109,7 +107,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
 
     const highest = await Transaction.findOne(query).sort({ amount: -1 });
     if (!highest) {
-      return { reply: 'No transactions were found for this period.' };
+      return { reply: 'No recorded expenses found for this account.' };
     }
     return {
       reply: `Your highest recorded expense is **${highest.description}** for **₹${highest.amount.toLocaleString()}** on ${new Date(highest.date).toLocaleDateString()} (${highest.category}).`,
@@ -123,7 +121,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
 
     const lowest = await Transaction.findOne(query).sort({ amount: 1 });
     if (!lowest) {
-      return { reply: 'No transactions were found for this period.' };
+      return { reply: 'No recorded expenses found for this account.' };
     }
     return {
       reply: `Your lowest recorded expense is **${lowest.description}** for **₹${lowest.amount.toLocaleString()}** on ${new Date(lowest.date).toLocaleDateString()} (${lowest.category}).`,
@@ -141,7 +139,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
     ]);
 
     if (breakdown.length === 0) {
-      return { reply: 'No transactions were found for this period.' };
+      return { reply: 'No recorded category expenses found.' };
     }
 
     const topCategory = breakdown[0];
@@ -205,7 +203,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
     startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate(), 0, 0, 0);
     endDate = new Date();
     periodTitle = 'This Week';
-  } else if (text.includes('this month') || text.includes('monthly summary')) {
+  } else if (text.includes('this month') || text.includes('monthly summary') || text.includes('how much did i spend')) {
     startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
     endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
     periodTitle = 'This Month';
@@ -238,15 +236,12 @@ export const processFinancialQuery = async (userId: string, question: string): P
     }
   }
 
-  const items = await Transaction.find(dbQuery).sort({ date: -1 });
+  let items = await Transaction.find(dbQuery).sort({ date: -1 });
 
+  // If no items found for this exact month, fetch all recent transactions across all dates for this user/owner so we NEVER return an error message to a valid financial question!
   if (items.length === 0) {
     delete dbQuery.date;
-    const fallbackItems = await Transaction.find(dbQuery).sort({ date: -1 }).limit(10);
-    if (fallbackItems.length === 0) {
-      return { reply: DEFAULT_HELP_MESSAGE };
-    }
-    items.push(...fallbackItems);
+    items = await Transaction.find(dbQuery).sort({ date: -1 }).limit(10);
   }
 
   let totalIncome = 0;
@@ -255,6 +250,13 @@ export const processFinancialQuery = async (userId: string, question: string): P
     if (item.type === 'income') totalIncome += item.amount;
     else totalExpense += item.amount;
   });
+
+  if (items.length === 0) {
+    const ownerName = ownerFilter || 'you';
+    return {
+      reply: `### Summary for ${periodTitle}\n\nNo recorded transactions found for ${ownerName}.\n\n**Total Expense**: ₹0\n**Total Income**: ₹0`,
+    };
+  }
 
   const txList = items
     .map(

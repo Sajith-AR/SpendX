@@ -19,7 +19,7 @@ export const fallbackAIQuery = (question: string, transactions: Transaction[] = 
     'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march', 'april', 'may',
     'highest', 'lowest', 'largest', 'smallest', 'most', 'food', 'transport', 'shopping',
     'bills', 'health', 'entertainment', 'salary', 'father', 'dad', 'mother', 'family', 'sajith', 'son',
-    'compare', 'category'
+    'compare', 'category', 'how much'
   ];
 
   const hasFinancialIntent = financialKeywords.some((kw) => text.includes(kw)) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(text);
@@ -29,9 +29,8 @@ export const fallbackAIQuery = (question: string, transactions: Transaction[] = 
   }
 
   const allTx = transactions.length > 0 ? transactions : [
-    { _id: '1', owner: 'Son (Sajith)', type: 'expense', amount: 120, category: 'Food', description: 'Coffee & Snacks', date: '2026-07-05', paymentMethod: 'UPI' },
-    { _id: '2', owner: 'Son (Sajith)', type: 'expense', amount: 60, category: 'Transport', description: 'Metro Ride', date: '2026-07-05', paymentMethod: 'UPI' },
-    { _id: '3', owner: 'Dad', type: 'expense', amount: 2400, category: 'Bills', description: 'Electricity Bill', date: '2026-07-04', paymentMethod: 'Bank Transfer' },
+    { _id: '1', owner: 'Son (Sajith)', type: 'expense', amount: 20, category: 'Food', description: 'Coffee & Snacks', date: '2026-08-01', paymentMethod: 'UPI' },
+    { _id: '2', owner: 'Dad', type: 'expense', amount: 50, category: 'Bills', description: 'Utility Bill', date: '2026-08-02', paymentMethod: 'Bank Transfer' },
   ];
 
   if (text.includes('highest') || text.includes('largest') || text.includes('most expensive')) {
@@ -45,7 +44,7 @@ export const fallbackAIQuery = (question: string, transactions: Transaction[] = 
     const foodTx = allTx.filter((t) => t.category.toLowerCase() === 'food');
     const total = foodTx.reduce((sum, t) => sum + t.amount, 0);
     const list = foodTx.map((t) => `• **${t.description}** (${t.owner}): ₹${t.amount}`).join('\n');
-    return `### Food Expenses\n\n${list}\n\n**Total Food Expense**: ₹${total.toLocaleString()}`;
+    return `### Food Expenses\n\n${list || 'No food expenses logged.'}\n\n**Total Food Expense**: ₹${total.toLocaleString()}`;
   }
 
   let ownerFilter: string | undefined = undefined;
