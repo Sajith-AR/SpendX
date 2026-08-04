@@ -28,32 +28,27 @@ export const fallbackAIQuery = (question: string, transactions: Transaction[] = 
     return DEFAULT_HELP_MESSAGE;
   }
 
-  const allTx = transactions.length > 0 ? transactions : [
-    { _id: '1', owner: 'Son (Sajith)', type: 'expense', amount: 20, category: 'Food', description: 'Coffee & Snacks', date: '2026-08-01', paymentMethod: 'UPI' },
-    { _id: '2', owner: 'Dad', type: 'expense', amount: 50, category: 'Bills', description: 'Utility Bill', date: '2026-08-02', paymentMethod: 'Bank Transfer' },
-  ];
+  let filtered = transactions;
 
-  if (text.includes('highest') || text.includes('largest') || text.includes('most expensive')) {
-    const expenses = allTx.filter((t) => t.type === 'expense');
-    if (expenses.length === 0) return 'No recorded expenses found.';
-    const highest = expenses.reduce((max, t) => (t.amount > max.amount ? t : max), expenses[0]);
-    return `Your highest recorded expense is **${highest.description}** for **₹${highest.amount.toLocaleString()}** on ${highest.date} (${highest.category}).`;
+  let isMeOrSon = false;
+  let isDad = false;
+
+  if (text.includes('father') || text.includes('dad')) {
+    isDad = true;
+    filtered = filtered.filter((t) => t.owner.toLowerCase().includes('dad') || t.owner.toLowerCase().includes('father'));
+  } else if (text.includes('my ') || text.includes(' i ') || text.includes('son') || text.includes('sajith') || text.startsWith('what did i') || text.startsWith('how much did i') || text.startsWith('show my')) {
+    isMeOrSon = true;
+    filtered = filtered.filter((t) => {
+      const o = t.owner.toLowerCase();
+      return o === 'me' || o.includes('son') || o.includes('sajith');
+    });
   }
 
-  if (text.includes('food')) {
-    const foodTx = allTx.filter((t) => t.category.toLowerCase() === 'food');
-    const total = foodTx.reduce((sum, t) => sum + t.amount, 0);
-    const list = foodTx.map((t) => `• **${t.description}** (${t.owner}): ₹${t.amount}`).join('\n');
-    return `### Food Expenses\n\n${list || 'No food expenses logged.'}\n\n**Total Food Expense**: ₹${total.toLocaleString()}`;
-  }
-
-  let ownerFilter: string | undefined = undefined;
-  if (text.includes('father') || text.includes('dad')) ownerFilter = 'Dad';
-  else if (text.includes('my ') || text.includes(' i ') || text.includes('son') || text.includes('sajith')) ownerFilter = 'Son';
-
-  let filtered = allTx;
-  if (ownerFilter) {
-    filtered = filtered.filter((t) => t.owner.toLowerCase().includes(ownerFilter!.toLowerCase()));
+  // Date filtering logic for fallback
+  const nowStr = new Date().toISOString().split('T')[0];
+  if (text.includes('today')) {
+    const todayItems = filtered.filter((t) => t.date.startsWith(nowStr));
+    if (todayItems.length > 0) filtered = todayItems;
   }
 
   let totalInc = 0;
@@ -64,11 +59,22 @@ export const fallbackAIQuery = (question: string, transactions: Transaction[] = 
     else totalExp += t.amount;
   });
 
+  const periodTitle = text.includes('today')
+    ? 'Today'
+    : text.includes('this month')
+    ? 'This Month'
+    : 'Recent Period';
+
+  if (filtered.length === 0) {
+    const name = isDad ? 'Dad' : 'Sajith';
+    return `### Summary for ${periodTitle}\n\nNo recorded transactions found for ${name}.\n\n**Total Expense**: ₹0\n**Total Income**: ₹0`;
+  }
+
   const list = filtered
     .map((t) => `• **${t.description}** (${t.owner} - ${t.category}): ${t.type === 'income' ? '+' : '-'}₹${t.amount.toLocaleString()}`)
     .join('\n');
 
-  let reply = `### Transactions Summary\n\n${list || 'No matching transactions found.'}\n\n`;
+  let reply = `### Transactions for ${periodTitle}\n\n${list}\n\n`;
   if (totalInc > 0) reply += `**Total Income**: ₹${totalInc.toLocaleString()}\n`;
   reply += `**Total Expense**: ₹${totalExp.toLocaleString()}\n`;
   if (totalInc > 0) reply += `**Net Savings**: ₹${(totalInc - totalExp).toLocaleString()}\n`;

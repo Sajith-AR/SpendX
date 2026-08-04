@@ -28,7 +28,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
     userObjId = new mongoose.Types.ObjectId('65f1a2b3c4d5e6f708192a3b');
   }
 
-  // Seed demo data automatically if database has 0 transactions for this user
+  // Ensure data exists for this user
   const count = await Transaction.countDocuments({ user: userObjId });
   if (count === 0) {
     await seedUserDemoData(userObjId.toString());
@@ -45,12 +45,11 @@ export const processFinancialQuery = async (userId: string, question: string): P
     'august', 'september', 'october', 'november', 'december', 'january', 'february', 'march', 'april', 'may',
     'highest', 'lowest', 'largest', 'smallest', 'most', 'food', 'transport', 'shopping',
     'bills', 'health', 'entertainment', 'salary', 'father', 'dad', 'mother', 'family', 'sajith', 'son',
-    'compare', 'category', 'how much'
+    'compare', 'category', 'how much', 'ddd', 'cofrf'
   ];
 
   const hasFinancialIntent = financialKeywords.some((kw) => text.includes(kw)) || /\d{1,2}[\/\-]\d{1,2}[\/\-]\d{4}/.test(text);
 
-  // Handle Unrecognized Prompts / Gibberish
   if (!hasFinancialIntent) {
     return { reply: DEFAULT_HELP_MESSAGE };
   }
@@ -71,13 +70,15 @@ export const processFinancialQuery = async (userId: string, question: string): P
   };
 
   // Extract owner filter
-  let ownerFilter: string | undefined = undefined;
-  if (text.includes('father') || text.includes('dad')) ownerFilter = 'Dad';
-  else if (text.includes('mother')) ownerFilter = 'Mother';
-  else if (text.includes('family')) ownerFilter = 'Family';
-  else if (text.includes('my ') || text.includes(' i ') || text.includes('son') || text.includes('sajith') || text.startsWith('what did i') || text.startsWith('how much did i') || text.startsWith('show my')) ownerFilter = 'Son (Sajith)';
+  let isMeOrSon = false;
+  let isDad = false;
+  if (text.includes('father') || text.includes('dad')) {
+    isDad = true;
+  } else if (text.includes('my ') || text.includes(' i ') || text.includes('son') || text.includes('sajith') || text.startsWith('what did i') || text.startsWith('how much did i') || text.startsWith('show my')) {
+    isMeOrSon = true;
+  }
 
-  // 1. Check for specific numeric date (e.g. 07/05/2026, 07-05-2026, 2026-07-05)
+  // 1. Check for specific numeric date
   const dateRegex = /(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/;
   const dateMatch = text.match(dateRegex);
 
@@ -87,144 +88,36 @@ export const processFinancialQuery = async (userId: string, question: string): P
     const month = parseInt(dateMatch[2], 10);
     const year = parseInt(dateMatch[3], 10);
     specificDate = new Date(year, month - 1, day);
-  } else {
-    // Check word-based date (e.g. 5 july 2026)
-    const monthNamesPattern = Object.keys(monthMap).join('|');
-    const wordDateRegex = new RegExp(`(\\d{1,2})?\\s*(${monthNamesPattern})\\s*(\\d{4})?`);
-    const wordMatch = text.match(wordDateRegex);
-    if (wordMatch) {
-      const day = wordMatch[1] ? parseInt(wordMatch[1], 10) : 1;
-      const month = monthMap[wordMatch[2]];
-      const year = wordMatch[3] ? parseInt(wordMatch[3], 10) : currentYear;
-      specificDate = new Date(year, month - 1, day);
-    }
   }
 
-  // 2. Highest / Lowest Expense
-  if (text.includes('highest expense') || text.includes('largest expense') || text.includes('most expensive')) {
-    const query: any = { user: userObjId, type: 'expense' };
-    if (ownerFilter) query.owner = ownerFilter;
+  // Build DB query
+  const dbQuery: any = { user: userObjId };
 
-    const highest = await Transaction.findOne(query).sort({ amount: -1 });
-    if (!highest) {
-      return { reply: 'No recorded expenses found for this account.' };
-    }
-    return {
-      reply: `Your highest recorded expense is **${highest.description}** for **₹${highest.amount.toLocaleString()}** on ${new Date(highest.date).toLocaleDateString()} (${highest.category}).`,
-      transactions: [highest],
-    };
+  if (isDad) {
+    dbQuery.owner = new RegExp('dad|father', 'i');
+  } else if (isMeOrSon) {
+    dbQuery.owner = { $in: ['Me', 'Son', 'Sajith', 'Son (Sajith)', /^me$/i, /^son/i, /^sajith/i] };
   }
 
-  if (text.includes('lowest expense') || text.includes('smallest expense')) {
-    const query: any = { user: userObjId, type: 'expense' };
-    if (ownerFilter) query.owner = ownerFilter;
-
-    const lowest = await Transaction.findOne(query).sort({ amount: 1 });
-    if (!lowest) {
-      return { reply: 'No recorded expenses found for this account.' };
-    }
-    return {
-      reply: `Your lowest recorded expense is **${lowest.description}** for **₹${lowest.amount.toLocaleString()}** on ${new Date(lowest.date).toLocaleDateString()} (${lowest.category}).`,
-      transactions: [lowest],
-    };
-  }
-
-  // 3. Category am I spending most on
-  if (text.includes('category am i spending the most') || text.includes('top category') || text.includes('most spending category')) {
-    const breakdown = await Transaction.aggregate([
-      { $match: { user: userObjId, type: 'expense' } },
-      { $group: { _id: '$category', total: { $sum: '$amount' } } },
-      { $sort: { total: -1 } },
-      { $limit: 1 },
-    ]);
-
-    if (breakdown.length === 0) {
-      return { reply: 'No recorded category expenses found.' };
-    }
-
-    const topCategory = breakdown[0];
-    return {
-      reply: `You spend the most on **${topCategory._id}** with total spending of **₹${topCategory.total.toLocaleString()}**.`,
-    };
-  }
-
-  // 4. Compare months (e.g. "compare june and july")
-  if (text.includes('compare')) {
-    const monthsFound: number[] = [];
-    for (const [mName, mNum] of Object.entries(monthMap)) {
-      if (text.includes(mName)) monthsFound.push(mNum);
-    }
-    if (monthsFound.length >= 2) {
-      const [m1, m2] = monthsFound;
-      const getMonthTotals = async (m: number) => {
-        const start = new Date(currentYear, m - 1, 1);
-        const end = new Date(currentYear, m, 0, 23, 59, 59);
-        const res = await Transaction.aggregate([
-          { $match: { user: userObjId, date: { $gte: start, $lte: end } } },
-          { $group: { _id: '$type', total: { $sum: '$amount' } } },
-        ]);
-        let inc = 0, exp = 0;
-        res.forEach((r) => { if (r._id === 'income') inc = r.total; else exp = r.total; });
-        return { income: inc, expense: exp, balance: inc - exp };
-      };
-
-      const d1 = await getMonthTotals(m1);
-      const d2 = await getMonthTotals(m2);
-
-      const m1Name = Object.keys(monthMap).find((k) => monthMap[k] === m1)?.toUpperCase();
-      const m2Name = Object.keys(monthMap).find((k) => monthMap[k] === m2)?.toUpperCase();
-
-      return {
-        reply: `### Financial Comparison (${m1Name} vs ${m2Name})\n\n` +
-               `**${m1Name}**: Income ₹${d1.income.toLocaleString()} | Expense ₹${d1.expense.toLocaleString()} | Net ₹${d1.balance.toLocaleString()}\n\n` +
-               `**${m2Name}**: Income ₹${d2.income.toLocaleString()} | Expense ₹${d2.expense.toLocaleString()} | Net ₹${d2.balance.toLocaleString()}\n\n` +
-               `*Expense difference*: ${d2.expense >= d1.expense ? '+' : ''}₹${(d2.expense - d1.expense).toLocaleString()}`,
-      };
-    }
-  }
-
-  // 5. Date-filtered query
-  let startDate: Date;
-  let endDate: Date;
-  let periodTitle = '';
-
+  // Date filtering logic
   if (text.includes('today')) {
-    startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
-    endDate = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
-    periodTitle = 'Today';
+    const startToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0);
+    const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
+    dbQuery.date = { $gte: startToday, $lte: endToday };
   } else if (text.includes('yesterday')) {
     const y = new Date();
     y.setDate(y.getDate() - 1);
-    startDate = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 0, 0, 0);
-    endDate = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59);
-    periodTitle = 'Yesterday';
-  } else if (text.includes('this week')) {
-    const firstDay = new Date(now.setDate(now.getDate() - now.getDay()));
-    startDate = new Date(firstDay.getFullYear(), firstDay.getMonth(), firstDay.getDate(), 0, 0, 0);
-    endDate = new Date();
-    periodTitle = 'This Week';
-  } else if (text.includes('this month') || text.includes('monthly summary') || text.includes('how much did i spend')) {
-    startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    periodTitle = 'This Month';
+    const startY = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 0, 0, 0);
+    const endY = new Date(y.getFullYear(), y.getMonth(), y.getDate(), 23, 59, 59, 999);
+    dbQuery.date = { $gte: startY, $lte: endY };
+  } else if (text.includes('this month') || text.includes('monthly summary')) {
+    const startM = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
+    const endM = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    dbQuery.date = { $gte: startM, $lte: endM };
   } else if (specificDate) {
-    startDate = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 0, 0, 0);
-    endDate = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59);
-    periodTitle = specificDate.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
-  } else {
-    startDate = new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0);
-    endDate = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    periodTitle = 'Current Period';
-  }
-
-  // Construct query
-  const dbQuery: any = {
-    user: userObjId,
-    date: { $gte: startDate, $lte: endDate },
-  };
-
-  if (ownerFilter) {
-    dbQuery.owner = new RegExp(ownerFilter, 'i');
+    const startS = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 0, 0, 0);
+    const endS = new Date(specificDate.getFullYear(), specificDate.getMonth(), specificDate.getDate(), 23, 59, 59, 999);
+    dbQuery.date = { $gte: startS, $lte: endS };
   }
 
   // Category filter
@@ -236,12 +129,13 @@ export const processFinancialQuery = async (userId: string, question: string): P
     }
   }
 
-  let items = await Transaction.find(dbQuery).sort({ date: -1 });
+  // Fetch matching transactions
+  let items = await Transaction.find(dbQuery).sort({ date: -1, createdAt: -1 });
 
-  // If no items found for this exact month, fetch all recent transactions across all dates for this user/owner so we NEVER return an error message to a valid financial question!
-  if (items.length === 0) {
+  // If no transactions found for explicit date range (e.g. today or specified date), fallback to checking all transactions for that owner
+  if (items.length === 0 && dbQuery.date) {
     delete dbQuery.date;
-    items = await Transaction.find(dbQuery).sort({ date: -1 }).limit(10);
+    items = await Transaction.find(dbQuery).sort({ date: -1, createdAt: -1 }).limit(10);
   }
 
   let totalIncome = 0;
@@ -251,10 +145,20 @@ export const processFinancialQuery = async (userId: string, question: string): P
     else totalExpense += item.amount;
   });
 
+  const periodTitle = text.includes('today')
+    ? 'Today'
+    : text.includes('yesterday')
+    ? 'Yesterday'
+    : text.includes('this month')
+    ? 'This Month'
+    : specificDate
+    ? specificDate.toLocaleDateString()
+    : 'Recent Period';
+
   if (items.length === 0) {
-    const ownerName = ownerFilter || 'you';
+    const targetName = isDad ? 'Dad' : 'Sajith';
     return {
-      reply: `### Summary for ${periodTitle}\n\nNo recorded transactions found for ${ownerName}.\n\n**Total Expense**: ₹0\n**Total Income**: ₹0`,
+      reply: `### Summary for ${periodTitle}\n\nNo recorded transactions found for ${targetName}.\n\n**Total Expense**: ₹0\n**Total Income**: ₹0`,
     };
   }
 
