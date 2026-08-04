@@ -211,7 +211,7 @@ export const processFinancialQuery = async (userId: string, question: string): P
 
   // Category filter
   const categories = ['food', 'transport', 'shopping', 'bills', 'education', 'health', 'entertainment', 'salary', 'investment', 'recharge'];
-  for (const cat) {
+  for (const cat of categories) {
     if (text.includes(cat)) {
       dbQuery.category = new RegExp(cat, 'i');
       break;
